@@ -1,6 +1,6 @@
-# nfc_card_reader
+# NFC CARD READER
 
-A new Flutter plugin project.
+NFC Card Reader plugin.
 
 ## Getting Started
 

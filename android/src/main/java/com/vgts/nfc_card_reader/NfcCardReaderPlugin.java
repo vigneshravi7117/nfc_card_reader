@@ -61,7 +61,7 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
     else if(call.method.equals("stopScanCard")) {
       if (mNfcAdapter != null)
       {
-        mNfcAdapter.disableReaderMode(this);
+        mNfcAdapter.disableReaderMode(activity);
         result.success(true);
       }
       else {

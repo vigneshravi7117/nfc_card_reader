@@ -38,6 +38,7 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _cardData = cardData;
     });
+    await _nfcCardReaderPlugin.stopScanning();
   }
 
   @override

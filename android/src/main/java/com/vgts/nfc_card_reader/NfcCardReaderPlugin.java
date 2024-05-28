@@ -57,13 +57,18 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
     if (call.method.equals("scanCard")) {
       flutterResult = result;
       startNfcReader();
-      // Map<String, String> cardMap = new HashMap<>();
-      // cardMap.put("cardNumber", "1234556889990");
-      // cardMap.put("cardExpiry", "01/24");
-      // cardMap.put("cardHolder", "Vignesh R");
-
-      // result.success(cardMap);
-    } else {
+    }
+    else if(call.method.equals("stopScanCard")) {
+      if (mNfcAdapter != null)
+      {
+        mNfcAdapter.disableReaderMode(this);
+        result.success(true);
+      }
+      else {
+        result.error("ADAPTER_NOT_AVAILABLE", "Adapter not available", null);
+      }
+    }
+    else {
       result.notImplemented();
     }
   }
@@ -181,10 +186,5 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
     return cardNumber.replaceAll(".{4}(?!$)", "$0" + delimiter);
   }
 
-  public static String bytesToHex(byte[] bytes) {
-    StringBuffer result = new StringBuffer();
-    for (byte b : bytes) result.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
-    return result.toString();
-  }
 
 }

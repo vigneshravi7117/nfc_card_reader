@@ -16,4 +16,13 @@ class NfcCardReader {
     }
     return cardData;
   }
+
+
+  Future<void> stopScanning() async {
+    try {
+      await _channel.invokeMethod('stopScanCard');
+    } on PlatformException {
+      throw "Platform Exception";
+    }
+  }
 }

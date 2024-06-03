@@ -18,27 +18,23 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _nfcCardReaderPlugin = NfcCardReader();
   CardData? _cardData;
+  late StreamSubscription _cardDataSubscription;
 
   @override
   void initState() {
     super.initState();
+    _cardDataSubscription = _nfcCardReaderPlugin.cardDataStream.listen((cardData) {
+      if (mounted) {
+        setState(() {
+          _cardData = cardData;
+        });
+      }
+    });
     scanCard();
   }
 
   Future<void> scanCard() async {
-    CardData? cardData;
-    try {
-      cardData = await _nfcCardReaderPlugin.scanCard();
-    } catch (e) {
-      debugPrint(e.toString());
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _cardData = cardData;
-    });
-    await _nfcCardReaderPlugin.stopScanning();
+    await _nfcCardReaderPlugin.scanCard();
   }
 
   @override

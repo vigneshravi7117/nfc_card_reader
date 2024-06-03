@@ -5,11 +5,15 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+
+import java.util.Objects;
 
 import com.github.devnied.emvnfccard.enums.EmvCardScheme;
 import com.github.devnied.emvnfccard.model.Application;
@@ -31,6 +35,9 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.EventChannel;
+import io.flutter.embedding.android.FlutterActivity;
+import io.flutter.embedding.engine.FlutterEngine;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +49,9 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
   private NfcAdapter mNfcAdapter;
   private Result flutterResult;
   private Activity activity;
-
+  public static final String STREAM = "cardDetailsStream";
+  private EventChannel.EventSink attachEvent;
+  final String TAG_NAME = "From_Native";
   Context applicationContext; 
 
   @Override
@@ -50,6 +59,19 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
     channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "com.vgts/nfc_card_reader");
     channel.setMethodCallHandler(this);
     applicationContext = flutterPluginBinding.getApplicationContext();
+    new EventChannel(flutterPluginBinding.getBinaryMessenger(), STREAM).setStreamHandler(
+            new EventChannel.StreamHandler() {
+              @Override
+              public void onListen(Object args, EventChannel.EventSink events) {
+                attachEvent = events;
+              }
+
+              @Override
+              public void onCancel(Object args) {
+                attachEvent = null;
+              }
+            }
+    );
   }
 
   @Override
@@ -59,15 +81,8 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
       startNfcReader();
     }
     else if(call.method.equals("stopScanCard")) {
-      if (mNfcAdapter != null)
-      {
-        mNfcAdapter.disableForegroundDispatch(activity);
-        mNfcAdapter.disableReaderMode(activity);
-        result.success(true);
-      }
-      else {
-        result.error("ADAPTER_NOT_AVAILABLE", "Adapter not available", null);
-      }
+      stopNfcReader();
+      result.success(true);
     }
     else {
       result.notImplemented();
@@ -89,6 +104,7 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
                 NfcAdapter.FLAG_READER_NFC_BARCODE |
                 NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
             options);
+        mNfcAdapter.disableForegroundDispatch(activity);
       } else {
         if (flutterResult != null) {
           flutterResult.error("NFC_NOT_SUPPORTED", "NFC is not supported on this device", null);
@@ -99,6 +115,12 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
         flutterResult.error("ACTIVITY_NOT_AVAILABLE", "Activity is not available", null);
       }
     }
+  }
+
+  private void stopNfcReader() {
+      if (attachEvent != null) {
+        attachEvent.endOfStream();
+      }
   }
 
   @Override
@@ -160,22 +182,32 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
         cardMap.put("cardExpiry", date != null ? date.toString() : null);
         cardMap.put("cardHolder", card.getHolderLastname());
 
-        if (flutterResult != null) {
-          flutterResult.success(cardMap);
-          flutterResult = null;
-        }
+        new Handler(Looper.getMainLooper()).post(() -> {
+          if (flutterResult != null) {
+            flutterResult.success(cardMap);
+            flutterResult = null;
+          }
+
+          if (attachEvent != null) {
+            attachEvent.success(cardMap);
+          }
+        });
 
         isoDep.close();
       } catch (IOException e) {
         e.printStackTrace();
-        if (flutterResult != null) {
-          flutterResult.error("NFC_READ_ERROR", "Error reading NFC tag", e.getMessage());
-        }
+        new Handler(Looper.getMainLooper()).post(() -> {
+          if (flutterResult != null) {
+            flutterResult.error("NFC_READ_ERROR", "Error reading NFC tag", e.getMessage());
+          }
+        });
       } catch (Exception e) {
         e.printStackTrace();
-        if (flutterResult != null) {
-          flutterResult.error("NFC_READ_ERROR", "Error processing NFC tag", e.getMessage());
-        }
+        new Handler(Looper.getMainLooper()).post(() -> {
+          if (flutterResult != null) {
+            flutterResult.error("NFC_READ_ERROR", "Error processing NFC tag", e.getMessage());
+          }
+        });
       }
     }
   }

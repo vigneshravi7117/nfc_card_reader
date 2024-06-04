@@ -34,7 +34,6 @@ class NfcCardReader {
     try {
       await _channel.invokeMethod('stopScanCard');
       _streamSubscription.cancel();
-      _cardDataStreamController.close();
     } on PlatformException {
       throw "Platform Exception";
     }

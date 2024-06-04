@@ -118,6 +118,9 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
   }
 
   private void stopNfcReader() {
+      if(mNfcAdapter!=null){
+        mNfcAdapter.disableReaderMode(activity);
+      }
       if (attachEvent != null) {
         attachEvent.endOfStream();
       }
@@ -183,11 +186,6 @@ public class NfcCardReaderPlugin implements FlutterPlugin, MethodCallHandler, Ac
         cardMap.put("cardHolder", card.getHolderLastname());
 
         new Handler(Looper.getMainLooper()).post(() -> {
-          if (flutterResult != null) {
-            flutterResult.success(cardMap);
-            flutterResult = null;
-          }
-
           if (attachEvent != null) {
             attachEvent.success(cardMap);
           }

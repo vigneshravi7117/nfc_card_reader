@@ -19,23 +19,32 @@ class _MyAppState extends State<MyApp> {
   final _nfcCardReaderPlugin = NfcCardReader();
   CardData? _cardData;
   late StreamSubscription _cardDataSubscription;
+  String buttonText = "Start Scanning";
 
   @override
   void initState() {
     super.initState();
-    _cardDataSubscription = _nfcCardReaderPlugin.cardDataStream.listen((cardData) {
+  }
+
+  Future<void> scanCard() async {
+    setState(() {
+      buttonText = "Stop Scanning";
+    });
+    _cardDataSubscription = _nfcCardReaderPlugin.cardDataStream.listen((cardData) async{
       if (mounted) {
         setState(() {
           _cardData = cardData;
         });
+        await _nfcCardReaderPlugin.stopScanning();
+        _cardDataSubscription.cancel();
+        setState(() {
+          buttonText = "Start Scanning";
+        });
       }
     });
-    scanCard();
-  }
-
-  Future<void> scanCard() async {
     await _nfcCardReaderPlugin.scanCard();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -44,21 +53,28 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: _cardData != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text('Card Number : ${_cardData!.cardNumber}\n'),
-                    Text('Card Expiry : ${_cardData!.cardExpiry}\n'),
-                    Text('Card Holder Name : ${_cardData!.cardHolderName}\n')
-                  ],
-                ),
-              )
-            : const Center(
-                child: Text('No card data available\n'),
-              ),
+        body: Column(
+          children: [
+            ElevatedButton(onPressed: (){
+              scanCard();
+            }, child: Text(buttonText)),
+            _cardData != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text('Card Number : ${_cardData!.cardNumber}\n'),
+                        Text('Card Expiry : ${_cardData!.cardExpiry}\n'),
+                        Text('Card Holder Name : ${_cardData!.cardHolderName}\n')
+                      ],
+                    ),
+                  )
+                : const Center(
+                    child: Text('No card data available\n'),
+                  ),
+          ],
+        ),
       ),
     );
   }

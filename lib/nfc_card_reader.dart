@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:nfc_card_reader/exception/scan_exception.dart';
 import 'package:nfc_card_reader/model/card_data.dart';
 
 class NfcCardReader {
@@ -17,8 +18,13 @@ class NfcCardReader {
     _streamSubscription = _stream.receiveBroadcastStream().listen(_listenStream);
     try {
       await _channel.invokeMethod('scanCard');
-    } on PlatformException {
-      throw "Platform Exception";
+    }
+    on PlatformException catch (exception) {
+      throw ScanException(exception.details);
+    }
+    catch(exception)
+    {
+      debugPrint("Exception while scanning : $exception");
     }
   }
 

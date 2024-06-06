@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nfc_card_reader/exception/scan_exception.dart';
 import 'dart:async';
 
 import 'package:nfc_card_reader/model/card_data.dart';
@@ -16,10 +17,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _nfcCardReaderPlugin = NfcCardReader();
   CardData? _cardData;
-  late StreamSubscription _cardDataSubscription;
   String buttonText = "Start Scanning";
+  NfcCardReader? _nfcCardReaderPlugin;
+  StreamSubscription? _cardDataSubscription;
 
   @override
   void initState() {
@@ -30,19 +31,34 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       buttonText = "Stop Scanning";
     });
-    _cardDataSubscription = _nfcCardReaderPlugin.cardDataStream.listen((cardData) async{
+
+    _nfcCardReaderPlugin ??= NfcCardReader();
+
+    _cardDataSubscription = _nfcCardReaderPlugin!.cardDataStream.listen((cardData) async{
       if (mounted) {
         setState(() {
           _cardData = cardData;
         });
-        await _nfcCardReaderPlugin.stopScanning();
-        _cardDataSubscription.cancel();
+        await _nfcCardReaderPlugin!.stopScanning();
+        _cardDataSubscription?.cancel();
         setState(() {
           buttonText = "Start Scanning";
         });
       }
     });
-    await _nfcCardReaderPlugin.scanCard();
+    try
+    {
+      await _nfcCardReaderPlugin!.scanCard();
+    }
+    on ScanException catch (exception){
+      debugPrint(exception.errorMsg);
+      await _nfcCardReaderPlugin!.stopScanning();
+      _cardDataSubscription?.cancel();
+      setState(() {
+        buttonText = "Start Scanning";
+      });
+    }
+
   }
 
 

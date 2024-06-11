@@ -38,12 +38,10 @@ class _MyAppState extends State<MyApp> {
       if (mounted) {
         setState(() {
           _cardData = cardData;
+          buttonText = "Start Scanning";
         });
         await _nfcCardReaderPlugin!.stopScanning();
         _cardDataSubscription?.cancel();
-        setState(() {
-          buttonText = "Start Scanning";
-        });
       }
     });
     try
